@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -O3 -I.
+CFLAGS=-Wall -Wextra -g -O0 -fsanitize=address -I.
 
 all: crysys_cli
 

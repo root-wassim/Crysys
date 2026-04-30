@@ -18,6 +18,7 @@
 #include "modern encryption/elgamal.h"
 #include "hash/md5.h"
 #include "hash/sha256.h"
+#include "classic encryption/cryptanalysis.h"
 
 void print_usage() {
     printf("Usage: crysys_cli [options] <input text>\n");
@@ -35,7 +36,15 @@ void print_usage() {
     printf("  -g <gen>    Generator for DH/ElGamal\n");
 }
 
+void interactive_mode();
+char* process_crypto(const char* algo, const char* mode, const char* key, const char* input, int shift, int aParam, int bParam, int matrixSize, uint64_t prime, uint64_t generator);
+
 int main(int argc, char* argv[]) {
+    if (argc == 1) {
+        interactive_mode();
+        return 0;
+    }
+
     char* algo = "caesar";
     char* mode = "encrypt";
     char* key = "";
@@ -87,6 +96,26 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    char* output = process_crypto(algo, mode, key, input ? input : "", shift, aParam, bParam, matrixSize, prime, generator);
+
+    if (!output) {
+        fprintf(stderr, "Error processing %s in %s mode\n", algo, mode);
+        if (input) free(input);
+        return 1;
+    }
+
+    if (outputFile) {
+        write_file(outputFile, output, strlen(output));
+    } else {
+        printf("%s\n", output);
+    }
+
+    if (input) free(input);
+    free(output);
+    return 0;
+}
+
+char* process_crypto(const char* algo, const char* mode, const char* key, const char* input, int shift, int aParam, int bParam, int matrixSize, uint64_t prime, uint64_t generator) {
     char* output = NULL;
 
     if (strcmp(algo, "caesar") == 0) {
@@ -161,13 +190,15 @@ int main(int argc, char* argv[]) {
             int count = 0;
             for (int i = 0; input[i]; i++) if (input[i] == ',') count++;
             uint64_t* c = (uint64_t*)malloc(count * sizeof(uint64_t));
-            char* token = strtok(input, ",");
+            char* input_copy = strdup(input);
+            char* token = strtok(input_copy, ",");
             int idx = 0;
             while (token) {
                 c[idx++] = strtoull(token, NULL, 10);
                 token = strtok(NULL, ",");
             }
             output = rsa_decrypt(c, count, d, n);
+            free(input_copy);
             free(c);
         }
     } else if (strcmp(algo, "elgamal") == 0) {
@@ -179,19 +210,112 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (!output) {
-        fprintf(stderr, "Error processing %s in %s mode\n", algo, mode);
-        if (input) free(input);
-        return 1;
-    }
+    return output;
+}
 
-    if (outputFile) {
-        write_file(outputFile, output, strlen(output));
+void interactive_mode() {
+    int choice = 0;
+    char input[4096] = {0};
+    char filepath[1024] = {0};
+    char* data = NULL;
+
+    printf("=========================================\n");
+    printf("        Crysys Interactive Menu          \n");
+    printf("=========================================\n");
+    printf("1. Encryption\n");
+    printf("2. Decryption\n");
+    printf("3. Cryptanalysis\n");
+    printf("Choose operation (1-3): ");
+    if (scanf("%d", &choice) != 1) return;
+    
+    // consume newline left by scanf
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) { }
+
+    int input_type = 0;
+    printf("\nInput from:\n1. Text\n2. File\nChoose input source (1-2): ");
+    if (scanf("%d", &input_type) != 1) return;
+    while ((c = getchar()) != '\n' && c != EOF) { }
+
+    if (input_type == 2) {
+        printf("Enter file path: ");
+        if (fgets(filepath, sizeof(filepath), stdin)) {
+            filepath[strcspn(filepath, "\n")] = 0;
+            size_t len;
+            data = read_file(filepath, &len);
+            if (!data) {
+                printf("Error reading file.\n");
+                return;
+            }
+        }
     } else {
-        printf("%s\n", output);
+        printf("Enter Input Text: ");
+        if (fgets(input, sizeof(input), stdin)) {
+            input[strcspn(input, "\n")] = 0;
+        }
+        data = strdup(input);
     }
 
-    if (input) free(input);
-    free(output);
-    return 0;
+    if (choice == 3) {
+        // Cryptanalysis
+        int crypto_choice = 0;
+        printf("\nCryptanalysis Options:\n");
+        printf("1. Index of Coincidence (Indice de coïncidence)\n");
+        printf("2. Probable Word Method (Vigenère)\n");
+        printf("3. Frequency Analysis (Vigenère)\n");
+        printf("Choose analysis method (1-3): ");
+        if (scanf("%d", &crypto_choice) != 1) {
+            free(data);
+            return;
+        }
+        while ((c = getchar()) != '\n' && c != EOF) { }
+
+        if (crypto_choice == 1) {
+            double ic = calc_index_of_coincidence(data);
+            printf("\n---> Index of Coincidence: %f\n\n", ic);
+        } else if (crypto_choice == 2) {
+            char pw[256];
+            printf("Enter probable word: ");
+            if (fgets(pw, sizeof(pw), stdin)) pw[strcspn(pw, "\n")] = 0;
+            char* res = probable_word_vigenere(data, pw);
+            printf("\n%s\n", res);
+            free(res);
+        } else if (crypto_choice == 3) {
+            int kl = 0;
+            printf("Enter estimated key length: ");
+            if (scanf("%d", &kl) == 1) {
+                char* res = freq_analysis_vigenere(data, kl);
+                printf("\n---> Deduced Key (assuming French 'E'): %s\n\n", res);
+                free(res);
+            }
+        }
+    } else {
+        // Encrypt or Decrypt
+        char algo[32], key[256];
+        char mode[32] = {0};
+        strcpy(mode, (choice == 1) ? "encrypt" : "decrypt");
+
+        printf("Enter Algorithm (e.g. aes, des, vigenere, etc): ");
+        if (scanf("%31s", algo) != 1) { free(data); return; }
+        while ((c = getchar()) != '\n' && c != EOF) { }
+
+        printf("Enter Key / Shift / Params (press Enter if none): ");
+        if (fgets(key, sizeof(key), stdin)) {
+            key[strcspn(key, "\n")] = 0;
+        }
+
+        int shift = 3;
+        if (strcmp(algo, "caesar") == 0 && strlen(key) > 0) shift = atoi(key);
+
+        char* output = process_crypto(algo, mode, key, data, shift, 1, 0, 2, 0, 0);
+
+        if (output) {
+            printf("\n---> Result:\n%s\n\n", output);
+            free(output);
+        } else {
+            printf("\n---> Error processing request.\n\n");
+        }
+    }
+
+    free(data);
 }
