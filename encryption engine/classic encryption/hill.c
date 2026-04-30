@@ -111,6 +111,8 @@ static void matrixMultiply(int** m, int* vec, int* res, int size) {
 }
 
 char* hill_encrypt(const char* plaintext, const char* key, int size) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     if (size != 2 && size != 3) return NULL;
     
     int* keyNumbers = (int*)malloc(strlen(key) * sizeof(int));
@@ -185,6 +187,8 @@ char* hill_encrypt(const char* plaintext, const char* key, int size) {
 }
 
 char* hill_decrypt(const char* ciphertext, const char* key, int size) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     if (size != 2 && size != 3) return NULL;
     size_t len = strlen(ciphertext);
     if (len % size != 0) return NULL;

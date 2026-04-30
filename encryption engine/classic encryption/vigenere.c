@@ -4,6 +4,8 @@
 #include <ctype.h>
 
 char* vigenere_encrypt(const char* plaintext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     size_t len = strlen(plaintext);
     char* result = (char*)malloc(len + 1);
     if (!result) return NULL;
@@ -40,6 +42,8 @@ char* vigenere_encrypt(const char* plaintext, const char* key) {
 }
 
 char* vigenere_decrypt(const char* ciphertext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     size_t len = strlen(ciphertext);
     char* result = (char*)malloc(len + 1);
     if (!result) return NULL;

@@ -190,8 +190,11 @@ static void des_process_block(const unsigned char* block, unsigned char keys[16]
 }
 
 char* des_encrypt(const char* plaintext, const char* keyStr) {
+    if (!keyStr || strlen(keyStr) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     char key[8] = {0};
-    strncpy(key, keyStr, 8);
+    size_t kl = strlen(keyStr);
+    memcpy(key, keyStr, kl > 8 ? 8 : kl);
     
     unsigned char keys[16][48];
     generateKeys(key, keys);
@@ -215,8 +218,11 @@ char* des_encrypt(const char* plaintext, const char* keyStr) {
 }
 
 char* des_decrypt(const char* ciphertext, const char* keyStr) {
+    if (!keyStr || strlen(keyStr) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     char key[8] = {0};
-    strncpy(key, keyStr, 8);
+    size_t kl = strlen(keyStr);
+    memcpy(key, keyStr, kl > 8 ? 8 : kl);
     
     unsigned char keys[16][48];
     generateKeys(key, keys);
@@ -234,7 +240,25 @@ char* des_decrypt(const char* ciphertext, const char* keyStr) {
     }
     
     int padding = result[decodedLen - 1];
-    if (padding > 0 && padding <= 8) decodedLen -= padding;
+    int valid_padding = 1;
+    if (padding > 0 && padding <= 8) {
+        for (int i = 0; i < padding; i++) {
+            if (result[decodedLen - 1 - i] != padding) {
+                valid_padding = 0;
+                break;
+            }
+        }
+    } else {
+        valid_padding = 0;
+    }
+    
+    if (!valid_padding) {
+        free(decoded);
+        free(result);
+        return NULL;
+    }
+    
+    decodedLen -= padding;
     
     char* output = (char*)malloc(decodedLen + 1);
     memcpy(output, result, decodedLen);

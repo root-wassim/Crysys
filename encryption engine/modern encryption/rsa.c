@@ -12,6 +12,7 @@ static uint64_t gcd(uint64_t a, uint64_t b) {
 }
 
 static uint64_t modExp(uint64_t base, uint64_t exp, uint64_t mod) {
+    if (mod == 0) return 0;
     uint64_t result = 1;
     base = base % mod;
     while (exp > 0) {

@@ -37,6 +37,9 @@ static unsigned char* process_rc4(RC4Algo* r, const unsigned char* data, size_t 
 }
 
 char* rc4_encrypt(const char* plaintext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
+    
     RC4Algo r;
     init_rc4(&r, key);
     size_t len = strlen(plaintext);
@@ -47,6 +50,9 @@ char* rc4_encrypt(const char* plaintext, const char* key) {
 }
 
 char* rc4_decrypt(const char* ciphertext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
+    
     size_t decoded_len;
     unsigned char* decoded = hex_decode(ciphertext, &decoded_len);
     if (!decoded) return NULL;

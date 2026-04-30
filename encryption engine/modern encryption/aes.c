@@ -222,6 +222,7 @@ static void aes_decrypt_block(AESAlgo* a, const uint8_t* block, uint8_t* out) {
 }
 
 char* aes_encrypt(const char* plaintext, const char* key) {
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     AESAlgo* a = init_aes(key);
     if (!a) return NULL;
     
@@ -245,6 +246,7 @@ char* aes_encrypt(const char* plaintext, const char* key) {
 }
 
 char* aes_decrypt(const char* ciphertext, const char* key) {
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     AESAlgo* a = init_aes(key);
     if (!a) return NULL;
     
@@ -262,8 +264,26 @@ char* aes_decrypt(const char* ciphertext, const char* key) {
     }
     
     int padding = result[decodedLen - 1];
-    if (padding > 0 && padding <= 16) decodedLen -= padding;
+    int valid_padding = 1;
+    if (padding > 0 && padding <= 16) {
+        for (int i = 0; i < padding; i++) {
+            if (result[decodedLen - 1 - i] != padding) {
+                valid_padding = 0;
+                break;
+            }
+        }
+    } else {
+        valid_padding = 0;
+    }
     
+    if (!valid_padding) {
+        free(decoded);
+        free(result);
+        free_aes(a);
+        return NULL;
+    }
+    
+    decodedLen -= padding;
     char* output = (char*)malloc(decodedLen + 1);
     memcpy(output, result, decodedLen);
     output[decodedLen] = '\0';

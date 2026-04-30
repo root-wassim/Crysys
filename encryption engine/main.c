@@ -117,6 +117,8 @@ int main(int argc, char* argv[]) {
 
 char* process_crypto(const char* algo, const char* mode, const char* key, const char* input, int shift, int aParam, int bParam, int matrixSize, uint64_t prime, uint64_t generator) {
     char* output = NULL;
+    if (prime == 0) prime = 104729;
+    if (generator == 0) generator = 2;
 
     if (strcmp(algo, "caesar") == 0) {
         if (strcmp(mode, "encrypt") == 0) output = caesar_encrypt(input, shift);
@@ -207,6 +209,36 @@ char* process_crypto(const char* algo, const char* mode, const char* key, const 
             elgamal_generate_keys(prime, generator, &priv, &pub);
             output = (char*)malloc(128);
             sprintf(output, "Private: %lu\nPublic: %lu\n", priv, pub);
+        } else if (strcmp(mode, "encrypt") == 0) {
+            uint64_t pubKey = strtoull(key, NULL, 10);
+            uint64_t *c1, *c2;
+            int len;
+            elgamal_encrypt(input, prime, generator, pubKey, &c1, &c2, &len);
+            output = (char*)malloc(len * 40 + 1);
+            output[0] = '\0';
+            for (int i = 0; i < len; i++) {
+                char tmp[48];
+                sprintf(tmp, "%lu|%lu,", c1[i], c2[i]);
+                strcat(output, tmp);
+            }
+            free(c1); free(c2);
+        } else if (strcmp(mode, "decrypt") == 0) {
+            uint64_t privKey = strtoull(key, NULL, 10);
+            int count = 0;
+            for (int i = 0; input[i]; i++) if (input[i] == ',') count++;
+            uint64_t *c1 = (uint64_t*)malloc(count * sizeof(uint64_t));
+            uint64_t *c2 = (uint64_t*)malloc(count * sizeof(uint64_t));
+            char* input_copy = strdup(input);
+            char* token = strtok(input_copy, ",");
+            int idx = 0;
+            while (token && idx < count) {
+                sscanf(token, "%lu|%lu", &c1[idx], &c2[idx]);
+                idx++;
+                token = strtok(NULL, ",");
+            }
+            output = elgamal_decrypt(c1, c2, count, prime, privKey);
+            free(input_copy);
+            free(c1); free(c2);
         }
     }
 

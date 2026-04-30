@@ -130,6 +130,8 @@ static void rc6_decrypt_block(RC6Algo* rc6, const unsigned char* block, unsigned
 }
 
 char* rc6_encrypt(const char* plaintext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     RC6Algo rc6;
     init_rc6(&rc6, key);
     
@@ -155,12 +157,14 @@ char* rc6_encrypt(const char* plaintext, const char* key) {
 }
 
 char* rc6_decrypt(const char* ciphertext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     RC6Algo rc6;
     init_rc6(&rc6, key);
     
     size_t decodedLen;
     unsigned char* decoded = hex_decode(ciphertext, &decodedLen);
-    if (!decoded || decodedLen % 16 != 0) {
+    if (!decoded || decodedLen == 0 || decodedLen % 16 != 0) {
         free(rc6.S);
         if (decoded) free(decoded);
         return NULL;
@@ -172,9 +176,26 @@ char* rc6_decrypt(const char* ciphertext, const char* key) {
     }
     
     int padding = result[decodedLen - 1];
+    int valid_padding = 1;
     if (padding > 0 && padding <= 16) {
-        decodedLen -= padding;
+        for (int i = 0; i < padding; i++) {
+            if (result[decodedLen - 1 - i] != padding) {
+                valid_padding = 0;
+                break;
+            }
+        }
+    } else {
+        valid_padding = 0;
     }
+    
+    if (!valid_padding) {
+        free(decoded);
+        free(result);
+        free(rc6.S);
+        return NULL;
+    }
+    
+    decodedLen -= padding;
     
     char* output = (char*)malloc(decodedLen + 1);
     memcpy(output, result, decodedLen);

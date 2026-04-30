@@ -4,6 +4,7 @@
 #include <time.h>
 
 static uint64_t modExp(uint64_t base, uint64_t exp, uint64_t mod) {
+    if (mod == 0) return 0;
     uint64_t result = 1;
     base = base % mod;
     while (exp > 0) {
@@ -33,6 +34,11 @@ static uint64_t modInverse(uint64_t a, uint64_t m) {
 }
 
 void elgamal_generate_keys(uint64_t p, uint64_t g, uint64_t* privKey, uint64_t* pubKey) {
+    if (p <= 2) {
+        *privKey = 0;
+        *pubKey = 0;
+        return;
+    }
     srand(time(NULL));
     *privKey = (rand() % (p - 2)) + 2;
     *pubKey = modExp(g, *privKey, p);

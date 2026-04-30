@@ -79,6 +79,8 @@ static char* prepare_text(const char* text, size_t* out_len) {
 }
 
 char* playfair_encrypt(const char* plaintext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     PlayfairAlgo p;
     init_playfair(&p, key);
     
@@ -108,6 +110,8 @@ char* playfair_encrypt(const char* plaintext, const char* key) {
 }
 
 char* playfair_decrypt(const char* ciphertext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     size_t len = strlen(ciphertext);
     if (len % 2 != 0) return NULL;
     

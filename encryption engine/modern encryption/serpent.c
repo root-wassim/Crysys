@@ -141,6 +141,8 @@ static void serpent_transform(SerpentAlgo* s, const unsigned char* block, unsign
 }
 
 char* serpent_encrypt(const char* plaintext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!plaintext || strlen(plaintext) == 0) return strdup("");
     SerpentAlgo s;
     init_serpent(&s, key);
     
@@ -163,12 +165,14 @@ char* serpent_encrypt(const char* plaintext, const char* key) {
 }
 
 char* serpent_decrypt(const char* ciphertext, const char* key) {
+    if (!key || strlen(key) == 0) return NULL;
+    if (!ciphertext || strlen(ciphertext) == 0) return strdup("");
     SerpentAlgo s;
     init_serpent(&s, key);
     
     size_t decodedLen;
     unsigned char* decoded = hex_decode(ciphertext, &decodedLen);
-    if (!decoded || decodedLen % 16 != 0) {
+    if (!decoded || decodedLen == 0 || decodedLen % 16 != 0) {
         if (decoded) free(decoded);
         return NULL;
     }
@@ -179,7 +183,25 @@ char* serpent_decrypt(const char* ciphertext, const char* key) {
     }
     
     int padding = result[decodedLen - 1];
-    if (padding > 0 && padding <= 16) decodedLen -= padding;
+    int valid_padding = 1;
+    if (padding > 0 && padding <= 16) {
+        for (int i = 0; i < padding; i++) {
+            if (result[decodedLen - 1 - i] != padding) {
+                valid_padding = 0;
+                break;
+            }
+        }
+    } else {
+        valid_padding = 0;
+    }
+    
+    if (!valid_padding) {
+        free(decoded);
+        free(result);
+        return NULL;
+    }
+    
+    decodedLen -= padding;
     
     char* output = (char*)malloc(decodedLen + 1);
     memcpy(output, result, decodedLen);
