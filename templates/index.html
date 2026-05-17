@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoLab — Laboratoire de Cryptographie</title>
+    <meta name="description" content="Interface interactive pour les TPs de cryptographie appliquée">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<nav id="sidebar">
+    <div class="sidebar-header"><div class="logo"><span class="logo-icon">🔐</span><div><h1>CryptoLab</h1><span class="subtitle">Cryptographie Appliquée</span></div></div></div>
+    <ul class="nav-list">
+        <li class="nav-item active" data-tp="dashboard"><span class="nav-icon">📊</span> Dashboard</li>
+        <li class="nav-section">TP1 — Classique</li>
+        <li class="nav-item" data-tp="cesar"><span class="nav-icon">🔤</span> César</li>
+        <li class="nav-item" data-tp="vigenere"><span class="nav-icon">🔑</span> Vigenère</li>
+        <li class="nav-item" data-tp="hill"><span class="nav-icon">📐</span> Hill</li>
+        <li class="nav-item" data-tp="otp"><span class="nav-icon">🎲</span> OTP</li>
+        <li class="nav-section">TP2 — Symétrique</li>
+        <li class="nav-item" data-tp="rc4"><span class="nav-icon">〰️</span> RC4</li>
+        <li class="nav-item" data-tp="des"><span class="nav-icon">🧱</span> DES / 3DES</li>
+        <li class="nav-item" data-tp="aes"><span class="nav-icon">🛡️</span> AES</li>
+        <li class="nav-item" data-tp="nist"><span class="nav-icon">🏆</span> NIST Finalists</li>
+        <li class="nav-section">TP3 — Asymétrique</li>
+        <li class="nav-item" data-tp="rsa"><span class="nav-icon">🗝️</span> RSA</li>
+        <li class="nav-item" data-tp="dh"><span class="nav-icon">🤝</span> Diffie-Hellman</li>
+        <li class="nav-item" data-tp="elgamal"><span class="nav-icon">🔮</span> ElGamal</li>
+        <li class="nav-item" data-tp="ecc"><span class="nav-icon">📈</span> ECC / ECIES</li>
+        <li class="nav-item" data-tp="hybrid"><span class="nav-icon">🔗</span> Hybride RSA+AES</li>
+        <li class="nav-section">TP4 — Hachage</li>
+        <li class="nav-item" data-tp="hash"><span class="nav-icon">#️⃣</span> SHA / Avalanche</li>
+        <li class="nav-item" data-tp="md5col"><span class="nav-icon">💥</span> MD5 Collision</li>
+        <li class="nav-section">TP5 — Signatures</li>
+        <li class="nav-item" data-tp="signatures"><span class="nav-icon">✍️</span> RSA-PSS / ECDSA</li>
+        <li class="nav-item" data-tp="elgamal_sign"><span class="nav-icon">📜</span> ElGamal Sign</li>
+        <li class="nav-item" data-tp="dsa"><span class="nav-icon">🏛️</span> DSA</li>
+        <li class="nav-section">TP6 — Applications</li>
+        <li class="nav-item" data-tp="vote"><span class="nav-icon">🗳️</span> Vote Paillier</li>
+    </ul>
+</nav>
+<main id="main-content">
+
+<!-- Dashboard -->
+<section id="page-dashboard" class="page active">
+    <div class="page-header"><h2>Dashboard</h2><p class="page-desc">Vue d'ensemble — 28+ algorithmes couverts par l'interface</p></div>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-number">6</div><div class="stat-label">TPs Complets</div></div>
+        <div class="stat-card"><div class="stat-number">28+</div><div class="stat-label">Algorithmes</div></div>
+        <div class="stat-card"><div class="stat-number">39</div><div class="stat-label">Tests Passés</div></div>
+        <div class="stat-card"><div class="stat-number">4</div><div class="stat-label">Apps Réseau</div></div>
+    </div>
+    <div class="tp-cards-grid">
+        <div class="tp-card" onclick="navigateTo('cesar')"><div class="tp-badge">TP1</div><h3>Chiffres Classiques</h3><p>César, Vigenère, Hill, OTP</p><div class="tp-tags"><span>César</span><span>Vigenère</span><span>Hill</span><span>OTP</span></div></div>
+        <div class="tp-card" onclick="navigateTo('aes')"><div class="tp-badge">TP2</div><h3>Chiffrement Symétrique</h3><p>RC4, DES/3DES, AES, NIST finalists</p><div class="tp-tags"><span>AES</span><span>DES</span><span>RC4</span><span>NIST</span></div></div>
+        <div class="tp-card" onclick="navigateTo('rsa')"><div class="tp-badge">TP3</div><h3>Chiffrement Asymétrique</h3><p>DH, RSA, ElGamal, ECC, Hybride</p><div class="tp-tags"><span>RSA</span><span>DH</span><span>ECC</span><span>ElGamal</span></div></div>
+        <div class="tp-card" onclick="navigateTo('hash')"><div class="tp-badge">TP4</div><h3>Fonctions de Hachage</h3><p>MD5 collision, SHA-256 scratch, HMAC</p><div class="tp-tags"><span>MD5</span><span>SHA-256</span><span>HMAC</span></div></div>
+        <div class="tp-card" onclick="navigateTo('signatures')"><div class="tp-badge">TP5</div><h3>Signatures Numériques</h3><p>RSA-PSS, ElGamal, DSA, ECDSA</p><div class="tp-tags"><span>PSS</span><span>ECDSA</span><span>DSA</span><span>ElGamal</span></div></div>
+        <div class="tp-card" onclick="navigateTo('vote')"><div class="tp-badge">TP6</div><h3>Applications Réseau</h3><p>TCP/TLS, Bluetooth, WiFi, Vote Paillier</p><div class="tp-tags"><span>TLS</span><span>Paillier</span><span>UDP</span></div></div>
+    </div>
+</section>
+
+<!-- César -->
+<section id="page-cesar" class="page">
+    <div class="page-header"><h2>🔤 Chiffre de César</h2><p class="page-desc">TP1 — Substitution mono-alphabétique par décalage</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="cesar-input">le chiffrement de cesar est une technique classique</textarea></div>
+        <div class="input-group"><label>Clé (k = 0–25)</label><input type="range" id="cesar-key" min="0" max="25" value="13"><span id="cesar-key-display" class="key-display">k = 13</span></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="cesarAction('encrypt')">🔒 Chiffrer</button><button class="btn btn-secondary" onclick="cesarAction('decrypt')">🔓 Déchiffrer</button><button class="btn btn-accent" onclick="cesarAction('attack')">⚔️ Cryptanalyse</button></div>
+        <div id="cesar-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Vigenère -->
+<section id="page-vigenere" class="page">
+    <div class="page-header"><h2>🔑 Chiffre de Vigenère</h2><p class="page-desc">TP1 — Poly-alphabétique + Kasiski</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="vigenere-input">la cryptographie classique utilise des substitutions alphabetiques</textarea></div>
+        <div class="input-group"><label>Clé</label><input type="text" id="vigenere-key" value="CRYPTO"></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="vigenereAction('encrypt')">🔒 Chiffrer</button><button class="btn btn-secondary" onclick="vigenereAction('decrypt')">🔓 Déchiffrer</button><button class="btn btn-accent" onclick="vigenereAction('attack')">⚔️ Kasiski + IC</button></div>
+        <div id="vigenere-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Hill -->
+<section id="page-hill" class="page">
+    <div class="page-header"><h2>📐 Chiffre de Hill</h2><p class="page-desc">TP1 — Chiffrement matriciel mod 26</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="hill-input">CRYPTOGRAPHIE</textarea></div>
+        <div class="input-group"><label>Matrice clé 2×2</label><div class="matrix-input"><input type="number" id="hill-a" value="3"><input type="number" id="hill-b" value="3"><input type="number" id="hill-c" value="2"><input type="number" id="hill-d" value="5"></div></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="hillAction('encrypt')">🔒 Chiffrer</button><button class="btn btn-secondary" onclick="hillAction('decrypt')">🔓 Déchiffrer</button></div>
+        <div id="hill-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- OTP -->
+<section id="page-otp" class="page">
+    <div class="page-header"><h2>🎲 One-Time Pad</h2><p class="page-desc">TP1 — Sécurité parfaite + vulnérabilité réutilisation</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message 1</label><textarea id="otp-input">Message secret</textarea></div>
+        <div class="input-group"><label>Message 2 (pour démo réutilisation)</label><textarea id="otp-input2">Autre secret!</textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="otpAction('encrypt')">🔒 Chiffrer OTP</button><button class="btn btn-danger" onclick="otpAction('reuse_demo')">⚠️ Démo réutilisation clé</button></div>
+        <div id="otp-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- RC4 -->
+<section id="page-rc4" class="page">
+    <div class="page-header"><h2>〰️ RC4 — Stream Cipher</h2><p class="page-desc">TP2 — KSA/PRGA + vulnérabilité WEP</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="rc4-input">Chiffrement par flot RC4</textarea></div>
+        <div class="input-group"><label>Clé</label><input type="text" id="rc4-key" value="SecretKey128bits"></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="rc4Action()">🔒 Chiffrer RC4</button></div>
+        <div id="rc4-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- DES -->
+<section id="page-des" class="page">
+    <div class="page-header"><h2>🧱 DES / Triple-DES</h2><p class="page-desc">TP2 — Modes ECB / CBC + faiblesse ECB</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="des-input">Message chiffré avec DES</textarea></div>
+        <div class="input-row"><div class="input-group"><label>Algorithme</label><select id="des-algo"><option>DES</option><option>3DES</option></select></div><div class="input-group"><label>Mode</label><select id="des-mode"><option>ECB</option><option selected>CBC</option></select></div></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="desAction()">🔒 Chiffrer</button></div>
+        <div id="des-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- AES -->
+<section id="page-aes" class="page">
+    <div class="page-header"><h2>🛡️ AES — Advanced Encryption Standard</h2><p class="page-desc">TP2 — ECB / CBC / CTR</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="aes-input">Message confidentiel chiffré avec AES</textarea></div>
+        <div class="input-row"><div class="input-group"><label>Mode</label><select id="aes-mode"><option>ECB</option><option selected>CBC</option><option>CTR</option></select></div><div class="input-group"><label>Taille clé</label><select id="aes-keysize"><option>128</option><option>192</option><option selected>256</option></select></div></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="aesAction()">🔒 Chiffrer</button></div>
+        <div id="aes-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- NIST -->
+<section id="page-nist" class="page">
+    <div class="page-header"><h2>🏆 NIST AES Finalists</h2><p class="page-desc">TP2 — Twofish, Serpent, RC6, MARS</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="nist-input">Pourquoi Rijndael a gagné le concours NIST AES</textarea></div>
+        <div class="input-group"><label>Algorithme</label><select id="nist-algo"><option value="twofish">Twofish (Schneier)</option><option value="serpent">Serpent (32 tours SPN)</option><option value="rc6">RC6 (RSA Labs)</option><option value="mars">MARS (IBM)</option></select></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="nistAction()">🔒 Chiffrer</button></div>
+        <div id="nist-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- RSA -->
+<section id="page-rsa" class="page">
+    <div class="page-header"><h2>🗝️ RSA — Rivest–Shamir–Adleman</h2><p class="page-desc">TP3 — RSA-OAEP</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="rsa-input">Message secret RSA</textarea></div>
+        <div class="input-group"><label>Taille clés</label><select id="rsa-bits"><option>1024</option><option selected>2048</option><option>4096</option></select></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="rsaAction()">🔒 Générer + Chiffrer</button></div>
+        <div id="rsa-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- DH -->
+<section id="page-dh" class="page">
+    <div class="page-header"><h2>🤝 Diffie-Hellman</h2><p class="page-desc">TP3 — Échange de clés + MITM</p></div>
+    <div class="crypto-panel">
+        <div class="btn-group"><button class="btn btn-primary" onclick="dhAction('exchange')">🤝 Échange DH</button><button class="btn btn-danger" onclick="dhAction('mitm')">☠️ Simuler MITM</button></div>
+        <div id="dh-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- ElGamal -->
+<section id="page-elgamal" class="page">
+    <div class="page-header"><h2>🔮 ElGamal</h2><p class="page-desc">TP3 — Non-déterministe + malléabilité</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Entier M à chiffrer</label><input type="number" id="elgamal-m" value="42" min="1"></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="elgamalAction()">🔒 Chiffrer ElGamal</button></div>
+        <div id="elgamal-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- ECC -->
+<section id="page-ecc" class="page">
+    <div class="page-header"><h2>📈 ECC — Courbes Elliptiques</h2><p class="page-desc">TP3 — ECDH P-256 + ECIES</p></div>
+    <div class="crypto-panel">
+        <div class="btn-group"><button class="btn btn-primary" onclick="eccAction('ecdh')">🤝 ECDH P-256</button><button class="btn btn-secondary" onclick="eccAction('ecies')">🔒 ECIES</button></div>
+        <div id="ecc-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Hybrid -->
+<section id="page-hybrid" class="page">
+    <div class="page-header"><h2>🔗 Hybride RSA + AES-GCM</h2><p class="page-desc">TP3 — Chiffrement production (RSA clé + AES données)</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="hybrid-input">Message chiffré en mode hybride RSA+AES-256-GCM pour la production</textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="hybridAction()">🔒 Chiffrer Hybride</button></div>
+        <div id="hybrid-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Hash -->
+<section id="page-hash" class="page">
+    <div class="page-header"><h2>#️⃣ Fonctions de Hachage</h2><p class="page-desc">TP4 — MD5, SHA-256, SHA-512 + Effet avalanche</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Message</label><textarea id="hash-input">Cryptographie appliquée</textarea></div>
+        <div class="input-group"><label>Algorithme</label><select id="hash-algo"><option value="md5">MD5 ⚠️ cassé</option><option value="sha256" selected>SHA-256</option><option value="sha512">SHA-512</option></select></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="hashAction()">🔨 Hacher</button><button class="btn btn-accent" onclick="sha256ScratchAction()">⚙️ SHA-256 From Scratch</button></div>
+        <div id="hash-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- MD5 Collision -->
+<section id="page-md5col" class="page">
+    <div class="page-header"><h2>💥 MD5 Collision (Wang & Yu 2004)</h2><p class="page-desc">TP4 — Preuve que MD5 est cassé</p></div>
+    <div class="crypto-panel">
+        <div class="btn-group"><button class="btn btn-danger" onclick="md5CollisionAction()">💥 Démontrer la collision</button></div>
+        <div id="md5col-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Signatures RSA-PSS / ECDSA -->
+<section id="page-signatures" class="page">
+    <div class="page-header"><h2>✍️ RSA-PSS / ECDSA</h2><p class="page-desc">TP5 — Signatures probabilistes</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Document</label><textarea id="sig-input">Document officiel à signer numériquement</textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="sigAction('rsa_pss')">✍️ RSA-PSS</button><button class="btn btn-secondary" onclick="sigAction('ecdsa')">✍️ ECDSA P-256</button></div>
+        <div id="sig-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- ElGamal Signature -->
+<section id="page-elgamal_sign" class="page">
+    <div class="page-header"><h2>📜 Signature ElGamal</h2><p class="page-desc">TP5 — Vulnérabilité nonce réutilisé (hack PS3)</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Document</label><textarea id="elgamal-sign-input">Document signé avec ElGamal</textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="elgamalSignAction()">✍️ Signer ElGamal</button></div>
+        <div id="elgamal-sign-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- DSA -->
+<section id="page-dsa" class="page">
+    <div class="page-header"><h2>🏛️ DSA — Digital Signature Algorithm</h2><p class="page-desc">TP5 — FIPS 186, DSA-2048</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Document</label><textarea id="dsa-input">Document signé avec DSA-2048</textarea></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="dsaAction()">✍️ Signer DSA</button></div>
+        <div id="dsa-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+<!-- Vote Paillier -->
+<section id="page-vote" class="page">
+    <div class="page-header"><h2>🗳️ Vote Électronique — Paillier</h2><p class="page-desc">TP6 — Chiffrement homomorphe additif</p></div>
+    <div class="crypto-panel">
+        <div class="input-group"><label>Votes (cliquez pour modifier)</label><div id="vote-buttons" class="vote-grid">
+            <button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn no" data-vote="0">NON</button><button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn no" data-vote="0">NON</button><button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn no" data-vote="0">NON</button><button class="vote-btn yes" data-vote="1">OUI</button><button class="vote-btn yes" data-vote="1">OUI</button>
+        </div></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="voteAction()">🗳️ Dépouiller (Paillier)</button></div>
+        <div id="vote-result" class="result-box hidden"></div>
+    </div>
+</section>
+
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

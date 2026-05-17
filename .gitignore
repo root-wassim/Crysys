@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Tests
+.pytest_cache/
+
+# Certificats générés
+tp6_application/tcp/certs/
+
+# Fichiers générés
+outputs/
+
+# Environnement
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
