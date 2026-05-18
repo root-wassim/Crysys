@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Crysys 2.0 - Premium Edition</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=3">
+</head>
+
+<body>
+  <div class="sidebar">
+    <h2>CRYSYS<span style="color: var(--text-main);"> 2.0</span></h2>
+    <ul>
+      <li class="tab-btn active" data-tab="tab-tp1"><span>🏛️</span> TP1: Classic Crypto</li>
+      <li class="tab-btn" data-tab="tab-tp2"><span>🔐</span> TP2: Symmetric Crypto</li>
+      <li class="tab-btn" data-tab="tab-tp3"><span>🔑</span> TP3: Asymmetric Crypto</li>
+      <li class="tab-btn" data-tab="tab-tp4"><span>#️⃣</span> TP4: Hash Functions</li>
+      <li class="tab-btn" data-tab="tab-tp5"><span>✍️</span> TP5: Digital Signatures</li>
+      <li class="tab-btn" data-tab="tab-tp6"><span>💬</span> TP6: Secure Chat</li>
+    </ul>
+    <div class="status-panel mt-auto">
+      <div><span id="status-dot"></span> <span id="status-text">Engine Online</span></div>
+      <div id="my-ip-display">{{ local_ip }}:{{ port }}</div>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- TP1: Classic Crypto -->
+    <div id="tab-tp1" class="tab-panel active">
+      <h1>Classic Cryptography <span
+          style="font-size: 0.5em; color: var(--accent-cyan); vertical-align: middle; border: 1px solid var(--accent-cyan); padding: 2px 6px; border-radius: 4px; margin-left: 10px;"></span>
+      </h1>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">Use classic substitution and permutation ciphers to
+        encrypt or decrypt messages, or utilize cryptanalysis tools to break them.</p>
+
+      <div class="grid-2">
+        <div class="card" style="border-top: 3px solid var(--accent-cyan);">
+          <h3><span style="margin-right: 8px;">🔒</span> Encryption Engine</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Algorithm</label>
+              <select id="tp1-algo" style="background: rgba(0,255,255,0.05);">
+                <option value="caesar">Caesar Cipher</option>
+                <option value="affine">Affine Cipher</option>
+                <option value="vigenere">Vigenère Cipher</option>
+                <option value="playfair">Playfair Cipher</option>
+                <option value="hill">Hill Cipher</option>
+                <option value="otp">One-Time Pad (OTP)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Key / Shift</label>
+              <input type="text" id="tp1-key" placeholder="e.g., 3 or SECRET">
+            </div>
+          </div>
+          <div class="form-group mt-2">
+            <label>Message Payload <span id="tp1-char-count"
+                style="float: right; color: var(--text-muted); font-size: 0.8em;">0 chars</span></label>
+            <textarea id="tp1-input" rows="4" placeholder="Enter plaintext to encrypt or ciphertext to decrypt..."
+              style="font-family: monospace;"></textarea>
+          </div>
+          <div class="button-group mt-2" style="display: flex; gap: 10px;">
+            <button class="primary" id="btn-tp1-encrypt" style="flex: 1; justify-content: center;">Encrypt</button>
+            <button id="btn-tp1-decrypt"
+              style="flex: 1; justify-content: center; background: rgba(255,0,128,0.1); border-color: rgba(255,0,128,0.3); color: var(--accent-pink);">Decrypt</button>
+          </div>
+          <div id="tp1-output" class="output-box empty mt-4" style="font-family: monospace; letter-spacing: 1px;"></div>
+        </div>
+
+        <div class="card" style="border-top: 3px solid var(--accent-purple);">
+          <h3><span style="margin-right: 8px;">🔍</span> Cryptanalysis Terminal</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Analysis Vector</label>
+              <select id="tp1-analysis-type" style="background: rgba(138,43,226,0.05);">
+                <option value="ic">Index of Coincidence</option>
+                <option value="freq_analysis">Frequency Analysis</option>
+                <option value="probable_word">Probable Word Attack</option>
+              </select>
+            </div>
+            <div class="form-group" id="tp1-analysis-extra">
+              <label>Target Parameter</label>
+              <input type="text" id="tp1-analysis-param" placeholder="Length or Word">
+            </div>
+          </div>
+          <div class="form-group mt-2">
+            <label>Intercepted Ciphertext</label>
+            <textarea id="tp1-analysis-input" rows="4" placeholder="Paste intercepted encrypted data here..."
+              style="font-family: monospace;"></textarea>
+          </div>
+          <div class="button-group mt-2">
+            <button class="primary" id="btn-tp1-analyze"
+              style="width: 100%; background: var(--accent-purple); box-shadow: 0 0 10px rgba(138,43,226,0.3);">Run
+              Analysis</button>
+          </div>
+          <div id="tp1-analysis-output" class="output-box empty mt-4"
+            style="background: #000; color: #0f0; font-family: monospace; border: 1px solid #333; height: 120px; overflow-y: auto;">
+            > Waiting for data...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TP2: Symmetric Crypto -->
+    <div id="tab-tp2" class="tab-panel">
+      <h1>Symmetric Cryptography</h1>
+      <div class="card">
+        <h3>Block & Stream Ciphers</h3>
+        <div class="form-group">
+          <label>Algorithm</label>
+          <select id="tp2-algo">
+            <option value="aes">AES (Advanced Encryption Standard)</option>
+            <option value="des">DES (Data Encryption Standard)</option>
+            <option value="rc4">RC4 (Stream Cipher)</option>
+            <option value="rc6">RC6 (NIST Finalist)</option>
+            <option value="serpent">Serpent (NIST Finalist)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Secret Key</label>
+          <input type="text" id="tp2-key" placeholder="Enter secret key...">
+        </div>
+
+        <!-- Text Encryption -->
+        <hr>
+        <h4>Text Operations</h4>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="tp2-text-input" rows="3" placeholder="Text to encrypt/decrypt..."></textarea>
+        </div>
+        <div class="button-group">
+          <button class="primary" id="btn-tp2-encrypt-text">Encrypt Text</button>
+          <button id="btn-tp2-decrypt-text">Decrypt Text</button>
+        </div>
+        <div id="tp2-text-output" class="output-box empty"></div>
+
+        <!-- File Encryption -->
+        <hr>
+        <h4>File Operations</h4>
+        <div class="grid-2">
+          <div>
+            <input type="file" id="tp2-file-enc-input">
+            <button class="primary mt-2" id="btn-tp2-encrypt-file">Encrypt File</button>
+            <div id="tp2-file-enc-output" class="output-box empty"></div>
+          </div>
+          <div>
+            <input type="file" id="tp2-file-dec-input">
+            <button class="mt-2" id="btn-tp2-decrypt-file">Decrypt File</button>
+            <div id="tp2-file-dec-output" class="output-box empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TP3: Asymmetric Crypto -->
+    <div id="tab-tp3" class="tab-panel">
+      <h1>Asymmetric Cryptography</h1>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Key Generation</h3>
+          <div class="form-group">
+            <label>Algorithm</label>
+            <select id="tp3-keygen-algo">
+              <option value="rsa">RSA</option>
+              <option value="dh">Diffie-Hellman (DH)</option>
+              <option value="elgamal">ElGamal</option>
+              <option value="ecc">ECC (Curve25519) - Python</option>
+            </select>
+          </div>
+          <div class="button-group">
+            <button class="primary" id="btn-tp3-keygen">Generate Keys</button>
+          </div>
+          <div id="tp3-keygen-output" class="output-box empty"></div>
+        </div>
+
+        <div class="card">
+          <h3>Encryption / Decryption</h3>
+          <div class="form-group">
+            <label>Algorithm</label>
+            <select id="tp3-algo">
+              <option value="rsa">RSA</option>
+              <option value="elgamal">ElGamal</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Public Key (For Encrypt)</label>
+              <input type="text" id="tp3-pubkey" placeholder="Enter Public Key...">
+            </div>
+            <div class="form-group">
+              <label>Private Key (For Decrypt)</label>
+              <input type="text" id="tp3-privkey" placeholder="Enter Private Key...">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Message</label>
+            <textarea id="tp3-input" rows="3" placeholder="Enter text or comma-separated ciphertext..."></textarea>
+          </div>
+          <div class="button-group">
+            <button class="primary" id="btn-tp3-encrypt">Encrypt (Pub Key)</button>
+            <button id="btn-tp3-decrypt">Decrypt (Priv Key)</button>
+          </div>
+          <div id="tp3-output" class="output-box empty"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TP4: Hash Functions -->
+    <div id="tab-tp4" class="tab-panel">
+      <h1>Hash Functions & Integrity</h1>
+      <div class="card">
+        <h3>Compute Hash</h3>
+        <div class="form-group">
+          <label>Algorithm</label>
+          <select id="tp4-algo">
+            <option value="md5">MD5 (Insecure)</option>
+            <option value="sha256">SHA-256 (Standard)</option>
+            <option value="sha512">SHA-512 (High Performance 64-bit)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Input Message</label>
+          <textarea id="tp4-input" rows="3" placeholder="Text to hash..."></textarea>
+        </div>
+        <div class="button-group">
+          <button class="primary" id="btn-tp4-hash">Compute Hash</button>
+        </div>
+        <div id="tp4-output" class="output-box empty"
+          style="font-size: 1.2rem; color: var(--accent-cyan); text-align: center; word-break: break-all;"></div>
+      </div>
+    </div>
+
+    <!-- TP5: Digital Signatures -->
+    <div id="tab-tp5" class="tab-panel">
+      <h1>Digital Signatures</h1>
+      <div class="card">
+        <h3>Sign & Verify</h3>
+        <div class="form-group">
+          <label>Algorithm</label>
+          <select id="tp5-algo">
+            <option value="rsa-pss">RSA-PSS</option>
+            <option value="dsa">DSA</option>
+            <option value="ecdsa">ECDSA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <button class="primary" id="btn-tp5-keygen" style="width: 100%; background: linear-gradient(135deg, var(--accent-pink), var(--accent-cyan)); font-weight: bold;">🔑 Generate Signature Key Pair (PEM)</button>
+        </div>
+        <div class="form-group">
+          <label>Message to Sign/Verify</label>
+          <textarea id="tp5-msg" rows="3" placeholder="Enter message..."></textarea>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Private Key (For Signing)</label>
+            <textarea id="tp5-privkey" rows="2" placeholder="Paste private key..."></textarea>
+            <button class="primary mt-2" id="btn-tp5-sign" style="width: 100%">Sign Message</button>
+          </div>
+          <div>
+            <label>Public Key & Signature (For Verifying)</label>
+            <textarea id="tp5-pubkey" rows="1" placeholder="Paste public key..."></textarea>
+            <textarea id="tp5-sig" rows="1" placeholder="Paste signature..." class="mt-2"></textarea>
+            <button class="mt-2" id="btn-tp5-verify" style="width: 100%">Verify Signature</button>
+          </div>
+        </div>
+
+        <div id="tp5-output" class="output-box empty mt-4"></div>
+      </div>
+    </div>
+
+    <!-- TP6: Secure Chat -->
+    <div id="tab-tp6" class="tab-panel">
+      <h1>Secure P2P Chat</h1>
+      <div class="card chat-container">
+        <div id="messages-area"></div>
+        <div class="chat-controls">
+          <input type="text" id="target-ip" placeholder="Target IP">
+          <input type="text" id="sender-name" placeholder="Your Name">
+          <select id="chat-algo">
+            <option value="aes">AES-256</option>
+            <option value="des">DES</option>
+            <option value="rc4">RC4</option>
+          </select>
+          <input type="text" id="chat-key" placeholder="Secret Key">
+          <input type="text" id="chat-message" placeholder="Type a message...">
+          <button class="primary" id="btn-send-msg">Send Message</button>
+          <button id="btn-clear-chat" style="margin-left: 10px;">Clear</button>
+        </div>
+      </div>
+
+      <h1 class="mt-4">Electronic Voting (Homomorphic)</h1>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">Secure e-voting simulation using Paillier Additive
+        Homomorphic Encryption.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Election Authority</h3>
+          <button class="primary mb-2" id="btn-vote-keygen" style="width: 100%">Generate Election Keys</button>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Public Key (n)</label>
+              <textarea id="vote-pub-n" rows="2" readonly placeholder="Generated..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Private Keys (p, q)</label>
+              <textarea id="vote-priv-pq" rows="2" readonly placeholder="Generated..."></textarea>
+            </div>
+          </div>
+
+          <h3 class="mt-4">3. Tally & Reveal</h3>
+          <p style="font-size: 0.85em; color: var(--text-muted);">The server adds the encrypted votes homomorphically,
+            without knowing the individual votes. Then the authority decrypts the final tally.</p>
+          <div class="button-group mt-2">
+            <button class="primary" id="btn-vote-tally" style="flex:1;">Tally Votes (Homomorphic Add)</button>
+            <button id="btn-vote-decrypt"
+              style="flex:1; background: rgba(255,0,128,0.1); border-color: rgba(255,0,128,0.3); color: var(--accent-pink);">Decrypt
+              Final Result</button>
+          </div>
+          <div id="vote-tally-output" class="output-box empty mt-2" style="font-size: 1.2em; text-align: center;"></div>
+        </div>
+
+        <div class="card">
+          <h3>2. Voters Station</h3>
+          <p style="font-size: 0.85em; color: var(--text-muted);">Cast votes as different users. Vote 1 for "Yes", 0 for
+            "No". Votes are encrypted in the browser before being added to the ballot box.</p>
+          <div class="form-group">
+            <label>Vote Value</label>
+            <select id="vote-choice">
+              <option value="1">1 (Yes / Candidate A)</option>
+              <option value="0">0 (No / Candidate B)</option>
+            </select>
+          </div>
+          <button class="primary mt-2" id="btn-vote-cast" style="width: 100%">Encrypt & Cast Vote</button>
+
+          <h4 class="mt-4">Encrypted Ballot Box</h4>
+          <div id="vote-ballot-box" class="output-box empty"
+            style="max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8em;">
+            No votes cast yet.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/static/js/app.js?v=5"></script>
+</body>
+
+</html>
