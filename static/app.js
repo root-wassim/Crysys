@@ -488,3 +488,330 @@ async function dsaAction() {
     html += resultLine('Falsification détectée', res.falsification_detected ? '✅' : '❌', res.falsification_detected ? 'success' : 'danger');
     showResult(resultId, html);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TP6 — CHAT RÉSEAU RÉEL
+   WebCrypto AES-256-GCM + Flask-SocketIO
+   ═══════════════════════════════════════════════════════════════ */
+
+// ─── Singleton Socket.IO ──────────────────────────
+let _socket = null;
+
+function getSocket() {
+    if (!_socket) {
+        _socket = io({ transports: ['websocket', 'polling'] });
+        _socket.on('connect', () => {
+            console.log('[SocketIO] Connecté :', _socket.id);
+        });
+        _socket.on('disconnect', () => {
+            console.log('[SocketIO] Déconnecté');
+            setStatus('wifi', false); setStatus('bt', false); setStatus('tcp', false);
+        });
+        // Écouter les événements de chat pour les 3 rooms
+        _socket.on('user_joined', (d) => onUserEvent(d, 'joined'));
+        _socket.on('user_left',   (d) => onUserEvent(d, 'left'));
+        _socket.on('message_received', (d) => onMessageReceived(d));
+        _socket.on('pong_test', (d) => {
+            const rtt = Date.now() - d.client_ts;
+            console.log(`[Latence] RTT = ${rtt}ms`);
+        });
+    }
+    return _socket;
+}
+
+// ─── État des chats ───────────────────────────────
+const chatState = {
+    wifi: { joined: false, room: 'tp6-wifi',      aesKey: null, username: '' },
+    bt:   { joined: false, room: 'tp6-bluetooth', aesKey: null, username: '' },
+    tcp:  { joined: false, room: 'tp6-tcp',       aesKey: null, username: '' },
+};
+
+// ─── Fonctions UI génériques ──────────────────────
+function setStatus(chat, connected, text = null) {
+    const el = document.getElementById(`${chat}-status`);
+    if (!el) return;
+    el.className = 'chat-status ' + (connected ? 'connected' : 'disconnected');
+    el.textContent = connected
+        ? (text || '🟢 Connecté')
+        : (text || '⚪ Déconnecté');
+}
+
+function setInputEnabled(chat, enabled) {
+    const msgInput = document.getElementById(`${chat}-msg`);
+    const sendBtn  = document.getElementById(`${chat}-send-btn`);
+    if (msgInput) msgInput.disabled = !enabled;
+    if (sendBtn)  sendBtn.disabled  = !enabled;
+}
+
+function updateMembers(chat, members) {
+    const el = document.getElementById(`${chat}-members`);
+    if (!el) return;
+    if (!members || members.length === 0) { el.textContent = 'Aucun'; return; }
+    el.innerHTML = members.map(m =>
+        `<span class="member-chip">${escapeHtml(m)}</span>`
+    ).join('');
+}
+
+function appendChatMessage(chat, { username, text, isSelf, timestamp, nonce, ciphertextHex, tagHex }) {
+    const container = document.getElementById(`${chat}-messages`);
+    if (!container) return;
+    // Supprimer l'écran de bienvenue si présent
+    const welcome = container.querySelector('.chat-welcome');
+    if (welcome) welcome.remove();
+
+    const time = timestamp ? new Date(timestamp).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit', second:'2-digit'}) : '';
+    const div = document.createElement('div');
+    div.className = 'chat-bubble-wrap ' + (isSelf ? 'self' : 'other');
+    div.innerHTML = `
+        <div class="chat-bubble ${isSelf ? 'self' : 'other'}">
+            <div class="bubble-header">
+                <span class="bubble-name">${escapeHtml(username)}</span>
+                <span class="bubble-time">${time}</span>
+            </div>
+            <div class="bubble-text">${escapeHtml(text)}</div>
+            <div class="bubble-tag">🔒 AES-256-GCM</div>
+        </div>
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+
+    // Mettre à jour le panneau crypto
+    if (nonce) {
+        const detail = document.getElementById(`${chat}-crypto-details`);
+        if (detail) {
+            detail.innerHTML =
+                `<span class="cd-label">Nonce (IV)</span>\n<span class="cd-val">${nonce}</span>\n\n` +
+                `<span class="cd-label">Ciphertext</span>\n<span class="cd-val">${(ciphertextHex||'').substring(0,64)}...</span>\n\n` +
+                `<span class="cd-label">Auth Tag</span>\n<span class="cd-val">${tagHex||''}</span>\n\n` +
+                `<span class="cd-label">Algorithme</span>\n<span class="cd-val success">AES-256-GCM ✅</span>`;
+        }
+    }
+}
+
+function appendSystemMessage(chat, text) {
+    const container = document.getElementById(`${chat}-messages`);
+    if (!container) return;
+    const welcome = container.querySelector('.chat-welcome');
+    if (welcome) welcome.remove();
+    const div = document.createElement('div');
+    div.className = 'chat-sys-msg';
+    div.textContent = text;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+// ─── Dérivation de clé AES (PBKDF2 via node-forge) ──
+// node-forge fonctionne sur HTTP (pas besoin de HTTPS contrairement à WebCrypto)
+async function deriveAESKey(password, salt = 'CryptoLabSalt2024') {
+    return new Promise((resolve, reject) => {
+        try {
+            // PBKDF2-SHA256, 100 000 itérations, 32 bytes (256 bits)
+            const key = forge.pkcs5.pbkdf2(
+                password, salt, 100000, 32,
+                forge.md.sha256.create()
+            );
+            resolve(key); // binary string (forge format)
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+// ─── Chiffrement AES-256-GCM (node-forge) ────────
+async function aesGcmEncrypt(text, keyBytes) {
+    const iv = forge.random.getBytesSync(12); // 96-bit nonce
+    const cipher = forge.cipher.createCipher('AES-GCM', keyBytes);
+    cipher.start({ iv: iv, tagLength: 128 });
+    cipher.update(forge.util.createBuffer(forge.util.encodeUtf8(text)));
+    cipher.finish();
+
+    const ciphertext = cipher.output.getBytes();
+    const tag = cipher.mode.tag.getBytes();
+    // combined = ciphertext + tag (tag appended at end, comme WebCrypto)
+    const combined = ciphertext + tag;
+
+    return {
+        iv:         forge.util.bytesToHex(iv),
+        ciphertext: forge.util.bytesToHex(ciphertext),
+        tag:        forge.util.bytesToHex(tag),
+        combined:   forge.util.bytesToHex(combined)
+    };
+}
+
+// ─── Déchiffrement AES-256-GCM (node-forge) ──────
+async function aesGcmDecrypt(encrypted, keyBytes) {
+    const iv         = forge.util.hexToBytes(encrypted.iv);
+    const combined   = forge.util.hexToBytes(encrypted.combined);
+    // Les 16 derniers bytes sont le tag GCM
+    const ciphertext = combined.slice(0, -16);
+    const tag        = combined.slice(-16);
+
+    const decipher = forge.cipher.createDecipher('AES-GCM', keyBytes);
+    decipher.start({
+        iv:        iv,
+        tag:       forge.util.createBuffer(tag),
+        tagLength: 128
+    });
+    decipher.update(forge.util.createBuffer(ciphertext));
+    const pass = decipher.finish();
+    if (!pass) throw new Error('Dechiffrement echoue - mauvaise cle ou donnees corrompues');
+    return decipher.output.toString('utf8');
+}
+
+// ─── Utilitaires hex (garde compat) ──────────────
+function bufToHex(buf) {
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function hexToBuf(hex) {
+    const arr = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) arr[i/2] = parseInt(hex.substr(i,2), 16);
+    return arr.buffer;
+}
+
+
+// ─── Événements Socket.IO ─────────────────────────
+function onUserEvent(data, type) {
+    const room = data.room;
+    // Trouver quel chat correspond à la room
+    for (const [chat, state] of Object.entries(chatState)) {
+        if (state.room === room) {
+            updateMembers(chat, data.members);
+            const verb = type === 'joined' ? 'a rejoint' : 'a quitté';
+            appendSystemMessage(chat, `👤 ${data.username} ${verb} le chat (${data.count} membre(s))`);
+        }
+    }
+}
+
+async function onMessageReceived(data) {
+    // Trouver le chat correspondant à la room du message
+    const sock = getSocket();
+    for (const [chat, state] of Object.entries(chatState)) {
+        if (!state.joined || !state.aesKey) continue;
+        // Le message peut venir de n'importe quelle room — on filtre par room stockée
+        // Le backend envoie à la room, donc on reçoit seulement les messages de nos rooms
+        const isSelf = (data.sender_sid === sock.id);
+        try {
+            const text = await aesGcmDecrypt(data.encrypted, state.aesKey);
+            appendChatMessage(chat, {
+                username: data.username,
+                text: text,
+                isSelf: isSelf,
+                timestamp: data.timestamp,
+                nonce: data.encrypted.iv,
+                ciphertextHex: data.encrypted.ciphertext,
+                tagHex: data.encrypted.tag
+            });
+        } catch (e) {
+            // Mauvaise clé ou autre room → ignorer
+        }
+    }
+}
+
+// ─── TP6 : Récupérer l'IP serveur ─────────────────
+async function wifiGetIP() {
+    try {
+        const res = await fetch('/api/tp6/my_ip');
+        const data = await res.json();
+        const ipEl = document.getElementById('wifi-server-ip');
+        const urlEl = document.getElementById('wifi-server-url');
+        if (ipEl) ipEl.textContent = data.ip;
+        if (urlEl) { urlEl.textContent = data.url; urlEl.title = 'Ouvrir dans Chrome sur Android'; }
+        // Afficher dans une petite alerte
+        const msg = `📡 IP Serveur : ${data.ip}\n🌐 URL Android : ${data.url}\n\nOuvrez cette URL dans Chrome sur votre Android !`;
+        alert(msg);
+    } catch(e) {
+        alert('Erreur: ' + e.message);
+    }
+}
+
+// ─── TP6 : Fonction générique de connexion ────────
+async function chatJoin(chat, room, usernameId, passwordId, btnId, salt) {
+    const state = chatState[chat];
+    if (state.joined) {
+        // Déconnexion
+        getSocket().emit('leave_chat', { room: state.room });
+        state.joined = false;
+        state.aesKey = null;
+        setStatus(chat, false);
+        setInputEnabled(chat, false);
+        document.getElementById(btnId).textContent = chat === 'wifi' ? '📡 Rejoindre WiFi Chat'
+            : chat === 'bt' ? '🔵 Appairer et Rejoindre' : '🔒 Connexion TLS';
+        appendSystemMessage(chat, '🔌 Vous avez quitté le chat.');
+        return;
+    }
+
+    const username = document.getElementById(usernameId).value.trim() || `User_${Math.random().toString(36).substr(2,4)}`;
+    const password = document.getElementById(passwordId).value.trim() || 'default';
+    setStatus(chat, false, '⏳ Connexion...');
+
+    try {
+        // Dériver la clé AES à partir du mot de passe
+        state.aesKey = await deriveAESKey(password, salt);
+        state.username = username;
+        state.joined = true;
+
+        const sock = getSocket();
+        sock.emit('join_chat', { room: state.room, username: username });
+
+        setStatus(chat, true, `🟢 Connecté (${username})`);
+        setInputEnabled(chat, true);
+        document.getElementById(btnId).textContent = '🔌 Quitter';
+        document.getElementById(btnId).style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    } catch(e) {
+        setStatus(chat, false, '❌ Erreur: ' + e.message);
+        state.joined = false; state.aesKey = null;
+    }
+}
+
+// ─── Fonction générique d'envoi ───────────────────
+async function chatSend(chat, msgInputId) {
+    const state = chatState[chat];
+    if (!state.joined || !state.aesKey) return;
+
+    const input = document.getElementById(msgInputId);
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    try {
+        const encrypted = await aesGcmEncrypt(text, state.aesKey);
+        const sock = getSocket();
+        const timestamp = new Date().toISOString();
+        const msg_id = Math.random().toString(36).substr(2) + Date.now().toString(36);
+
+        sock.emit('send_message', {
+            room: state.room,
+            username: state.username,
+            encrypted: encrypted,
+            timestamp: timestamp,
+            msg_id: msg_id
+        });
+    } catch(e) {
+        appendSystemMessage(chat, '❌ Erreur de chiffrement: ' + e.message);
+    }
+}
+
+// ─── TP6 WiFi Chat ────────────────────────────────
+async function wifiJoin() {
+    await chatJoin('wifi', 'tp6-wifi', 'wifi-username', 'wifi-password', 'wifi-join-btn', 'WiFiSalt2024');
+}
+async function wifiSend() {
+    await chatSend('wifi', 'wifi-msg');
+}
+
+// ─── TP6 Bluetooth Chat ───────────────────────────
+async function btJoin() {
+    await chatJoin('bt', 'tp6-bluetooth', 'bt-username', 'bt-password', 'bt-join-btn', 'BluetoothPairingSalt');
+}
+async function btSend() {
+    await chatSend('bt', 'bt-msg');
+}
+
+// ─── TP6 TCP/TLS Chat ─────────────────────────────
+async function tcpJoin() {
+    await chatJoin('tcp', 'tp6-tcp', 'tcp-username', 'tcp-password', 'tcp-join-btn', 'TLSSalt2024');
+}
+async function tcpSend() {
+    await chatSend('tcp', 'tcp-msg');
+}

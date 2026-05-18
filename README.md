@@ -72,7 +72,7 @@ python app.py
 | **TP3** | RSA, Diffie-Hellman, ElGamal, ECC, Hybride | Génération de clés, MITM, ECDH, RSA+AES-GCM |
 | **TP4** | Hash/Avalanche, MD5 Collision | Effet avalanche, SHA-256 from scratch, collision réelle |
 | **TP5** | RSA-PSS, ECDSA, ElGamal Sign, DSA | Signer, vérifier, détecter la falsification |
-| **TP6** | Vote Paillier | Vote interactif avec chiffrement homomorphe |
+| **TP6** | WiFi Chat, Bluetooth Chat, TCP/TLS Chat, Vote Paillier | Chat chiffré temps réel PC↔Android + vote homomorphe |
 
 > **Chaque bouton exécute le vrai code Python du TP** — pas de simulation JavaScript.
 
@@ -248,85 +248,167 @@ python tp5_signatures/dsa_ecdsa.py
 
 ## TP6 — Applications réseau
 
-**Objectif** : Utiliser la cryptographie dans des applications réseau **réelles et interactives**. L'utilisateur tape ses propres messages — rien n'est automatique.
+**Objectif** : Utiliser la cryptographie dans des applications réseau **réelles et interactives** — accessible depuis l'interface web, testable entre un PC et un Android sur le même réseau local.
 
-### 📡 6.1 — Chat TCP/TLS
+> **NOUVEAU** : Toutes les applications TP6 sont désormais intégrées dans le site web. Aucun terminal requis — ouvrez simplement `http://localhost:5000` et naviguez vers TP6.
 
-Communication sécurisée avec TLS 1.3 et certificats auto-signés X.509.
+---
+
+### 🌐 Accès Web (recommandé)
 
 ```powershell
-# Terminal 1 : Serveur
+python app.py
+# → http://localhost:5000  →  sidebar TP6
+```
+
+**4 applications dans la sidebar TP6 :**
+
+| # | Application | Room SocketIO | Chiffrement | PIN/Mot de passe |
+|---|-------------|--------------|-------------|-----------------|
+| 📡 | **WiFi Chat** | `tp6-wifi` | AES-256-GCM | `CryptoLab2024` (défaut) |
+| 🔵 | **Bluetooth Chat** | `tp6-bluetooth` | AES-256-GCM | `1234` (PIN défaut) |
+| 🔒 | **TCP/TLS Chat** | `tp6-tcp` | AES-256-GCM | `TLS-Secret-2024` (défaut) |
+| 🗳️ | **Vote Paillier** | — | Paillier homomorphe | — |
+
+---
+
+### 📡 TP6.1 — WiFi Chat (Interface Web)
+
+Chat UDP chiffré, simulé via WebSockets sur le réseau local.
+
+#### Étape par étape — PC (Ethernet) + Android (WiFi)
+
+**1. Lancer le serveur sur le PC**
+```powershell
+cd Crypto_Project
+python app.py
+```
+Le serveur affiche votre **IP LAN** :
+```
+[>] Reseau : http://192.168.100.49:5000   ← à noter
+[>] Android: ouvrir http://192.168.100.49:5000 dans Chrome
+```
+
+**2. Ouvrir le pare-feu Windows** (si l'Android ne peut pas se connecter)
+```powershell
+netsh advfirewall firewall add rule name="CryptoLab" dir=in action=allow protocol=TCP localport=5000
+```
+
+**3. Sur le PC — rejoindre le chat**
+- Ouvrir `http://127.0.0.1:5000` dans Chrome
+- Sidebar → **WiFi Chat**
+- Nom : `PC-Desktop` | Mot de passe : `CryptoLab2024`
+- Cliquer **📡 Rejoindre WiFi Chat** → statut passe à 🟢 Connecté
+
+**4. Sur l'Android — rejoindre le même chat**
+- Connecter l'Android au **même routeur WiFi**
+- Ouvrir Chrome Android → `http://192.168.100.49:5000`
+- Sidebar → **WiFi Chat**
+- Nom : `Android` | Mot de passe : `CryptoLab2024` (**identique**)
+- Cliquer **📡 Rejoindre WiFi Chat**
+- Les deux appareils apparaissent dans **Membres connectés**
+
+**5. Chatter**
+- Taper un message sur le PC → apparaît sur l'Android en temps réel
+- Taper un message sur l'Android → apparaît sur le PC
+- Chaque bulle affiche le badge **🔒 AES-256-GCM**
+- Le panneau **Détails cryptographiques** montre le Nonce, Ciphertext et Tag pour chaque message
+
+#### Architecture technique
+
+```
+PC Chrome                  Flask Server (app.py)         Android Chrome
+   |                              |                              |
+   |-- join_chat(tp6-wifi) ------>|                              |
+   |                              |<--- join_chat(tp6-wifi) -----|
+   |                              |                              |
+   | [PBKDF2 → clé AES-256]       |                    [PBKDF2 → clé AES-256]
+   | [AES-GCM encrypt(msg)]       |                              |
+   |-- send_message(blob) ------->|                              |
+   |                              |--- message_received(blob) -->|
+   |                              |              [AES-GCM decrypt → texte clair]
+```
+
+> **Confidentialité** : Le serveur Flask **ne voit jamais le texte clair**. Il relaye uniquement le blob chiffré opaque. La clé AES est dérivée côté client (navigateur) et n'est jamais envoyée au serveur.
+
+---
+
+### 🔵 TP6.2 — Bluetooth Chat (Interface Web)
+
+Simulation du protocole Bluetooth RFCOMM avec appairage par PIN, chiffrement AES-256-GCM.
+
+**Différence par rapport au WiFi Chat :**
+- Le **PIN d'appairage** remplace le mot de passe (simule le pairing Bluetooth)
+- Le salt PBKDF2 est différent (`BluetoothPairingSalt`) → clé AES différente
+- Les deux appareils doivent entrer le **même PIN** (ex: `1234`)
+
+**Utilisation :**
+- Sidebar → **Bluetooth Chat**
+- Nom : `Mon-PC` | PIN : `1234`
+- Sur Android : Nom : `Galaxy-S24` | PIN : `1234`
+- Cliquer **🔵 Appairer et Rejoindre**
+
+**Comportement cryptographique :**
+```
+PIN "1234"  →  PBKDF2-SHA256 (100 000 itérations)  →  Clé AES-256
+Message     →  AES-256-GCM(Nonce 96-bit)            →  Ciphertext + Tag 128-bit
+```
+
+---
+
+### 🔒 TP6.3 — TCP/TLS Chat (Interface Web)
+
+Simulation d'un canal TCP/TLS avec clé pré-partagée et chiffrement end-to-end AES-256-GCM.
+
+**Différence :**
+- Utilise le salt `TLSSalt2024` pour la dérivation PBKDF2
+- Simule un échange de clé TLS pré-négociée
+- Le serveur affiche explicitement qu'il ne peut pas lire les messages
+
+**Utilisation :**
+- Sidebar → **TCP/TLS Chat**
+- Identifiant : `Client-PC` | Clé TLS : `TLS-Secret-2024`
+- Sur Android : Identifiant : `Client-Android` | **même clé TLS**
+- Cliquer **🔒 Connexion TLS**
+
+---
+
+### 🗳️ TP6.4 — Vote Paillier (Interface Web)
+
+Vote électronique homomorphe : le serveur additionne les votes chiffrés **sans jamais voir les votes individuels**.
+
+**Utilisation :**
+- Sidebar → **Vote Paillier**
+- Cliquer sur les boutons OUI/NON pour configurer les votes
+- Cliquer **🗳️ Dépouiller (Paillier)**
+- Le résultat est calculé sur des données chiffrées et révèle uniquement le total
+
+---
+
+### 🖥️ Mode terminal (scripts standalone)
+
+Les scripts Python originaux restent disponibles pour une utilisation en ligne de commande :
+
+```powershell
+# TCP/TLS (port 9443)
 python tp6_application/tcp/server.py
-
-# Terminal 2 : Client (tape ses messages)
 python tp6_application/tcp/client.py 127.0.0.1
-```
 
-**Ce que l'utilisateur voit :**
-```
-✅ Connexion TLS établie !
-🔒 Protocole : TLSv1.3
-🔐 Cipher    : TLS_AES_256_GCM_SHA384
-📜 Serveur   : CryptoLab-Server
-
-📤 Vous > Bonjour serveur !
-   [23:47:41] Envoyé (17 octets, chiffré TLS)
-📩 Serveur > [SERVEUR 23:47:41] Reçu: Bonjour serveur !
-```
-
-### 📶 6.2 — Bluetooth sécurisé (Windows)
-
-Communication chiffrée AES-256-GCM via sockets TCP (transport simulant Bluetooth RFCOMM).
-
-```powershell
-# Terminal 1 : Serveur BT
+# Bluetooth simulé (port 9800)
 python tp6_application/bluetooth/bt_server.py
-
-# Terminal 2 : Client BT (tape ses messages)
 python tp6_application/bluetooth/bt_client.py 127.0.0.1
+python tp6_application/bluetooth/bt_server.py --simulate   # sans réseau
 
-# Mode simulation (sans réseau)
-python tp6_application/bluetooth/bt_server.py --simulate
-```
-
-### 📡 6.3 — Chat WiFi UDP chiffré
-
-Chat bidirectionnel — chaque paquet UDP est chiffré indépendamment avec AES-256-GCM.
-
-```powershell
-# Terminal 1 : Écoute + envoie (bidirectionnel)
+# WiFi UDP chiffré (port 9999)
 python tp6_application/wifi_chat/udp_server.py
-
-# Terminal 2 : Envoie vers le serveur
 python tp6_application/wifi_chat/udp_client.py 127.0.0.1
 
-# Broadcast (tous les appareils du WiFi reçoivent)
-python tp6_application/wifi_chat/udp_client.py 255.255.255.255
-```
-
-### 🗳️ 6.4 — Vote électronique Paillier
-
-Le serveur additionne les votes chiffrés **sans jamais voir les votes individuels**.
-
-```powershell
-# Terminal 1 : Serveur (tape 'r' pour dépouiller)
+# Vote Paillier (port 9500)
 python tp6_application/vote_electronique/vote_server.py
-
-# Terminal 2+ : Clients (tapent 1=OUI ou 0=NON)
 python tp6_application/vote_electronique/vote_client.py 127.0.0.1
 ```
 
-**Ce que le client voit :**
-```
-🗳️  Votre action > 1
-⏳ Chiffrement du vote (1)...
-🔒 Vote chiffré : 1147259414431410163652117336309486890761...
-   Taille du chiffré : 617 chiffres
-📤 Envoyé au serveur : ok
-🔒 Le serveur NE PEUT PAS déchiffrer ce vote individuel !
-```
-
-> 📖 **Guides détaillés** : voir le dossier `docs/` pour les instructions pas à pas avec schémas réseau.
+> 📖 **Guides détaillés** : voir le dossier `docs/` pour les schémas réseau et instructions pas à pas.
 
 ---
 
@@ -369,7 +451,11 @@ Chaque exercice réseau dispose d'un guide complet dans le dossier `docs/` :
 | `numpy` | Manipulation d'images |
 | `phe` | Chiffrement homomorphe Paillier |
 | `flask` | Interface graphique web |
+| `flask-socketio` | WebSockets temps réel (TP6 Chat) |
+| `eventlet` | Serveur async pour Flask-SocketIO |
 | `pytest` | Tests unitaires |
+
+> **Node-forge** (librairie JS) est chargé automatiquement depuis CDN — elle remplace WebCrypto API pour fonctionner sur HTTP (pas de HTTPS requis).
 
 Tout installer :
 ```powershell
@@ -394,7 +480,32 @@ C'est normal — `pybluez` ne supporte que Linux. Le module Bluetooth de CryptoL
 
 La bibliothèque `cryptography` exige un minimum de **1024 bits** pour RSA. Les démos utilisent 2048 bits par défaut.
 
-### `Connection refused` sur TP6
+### Erreur `Cannot read properties of undefined (reading 'importKey')` sur Android
+
+Cette erreur apparaît quand l'Android accède au chat via **HTTP** (pas HTTPS). La WebCrypto API du navigateur est bloquée sur HTTP pour des raisons de sécurité.
+
+**Solution appliquée dans ce projet :** la bibliothèque `node-forge` (JavaScript pur) remplace WebCrypto. Elle implémente PBKDF2 et AES-256-GCM sans requérir HTTPS.
+
+Si vous voyez encore cette erreur, videz le cache du navigateur Android :
+- Chrome Android → `...` → Paramètres → Confidentialité → Effacer les données de navigation
+
+### `Connection refused` sur le chat web TP6
+
+1. Vérifiez que `python app.py` tourne sur le PC
+2. PC et Android doivent être sur le **même routeur** (Ethernet PC + WiFi Android = OK)
+3. Ouvrez le port Flask dans le pare-feu Windows :
+```powershell
+netsh advfirewall firewall add rule name="CryptoLab" dir=in action=allow protocol=TCP localport=5000
+```
+4. Sur l'Android, tapez l'IP LAN du PC (ex: `http://192.168.100.49:5000`), **pas** `localhost`
+
+### Les deux appareils se voient dans Membres mais les messages ne s'affichent pas
+
+Cause : le **mot de passe / PIN est différent** entre les deux appareils. La clé AES dérivée est alors différente → le déchiffrement échoue silencieusement.
+
+Solution : vérifier que le même mot de passe est saisi des deux côtés avant de rejoindre.
+
+### `Connection refused` sur TP6 (scripts terminal)
 
 1. Vérifiez que le **serveur est lancé** dans un autre terminal
 2. Vérifiez que les deux machines sont sur le **même sous-réseau**

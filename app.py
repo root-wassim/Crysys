@@ -1,10 +1,12 @@
 """
 CryptoLab — Interface graphique web professionnelle
 Flask backend pour exécuter les TPs de cryptographie
+TP6 — Chat réseau réel via WebSockets (Flask-SocketIO)
 """
-import os, sys, json, time, hashlib, traceback
+import os, sys, json, time, hashlib, traceback, socket as _socket
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 # Ajouter le répertoire racine au path
 ROOT = Path(__file__).parent
@@ -14,6 +16,25 @@ app = Flask(__name__,
             template_folder=str(ROOT / "templates"),
             static_folder=str(ROOT / "static"))
 app.secret_key = os.urandom(32)
+
+# -- Flask-SocketIO (WebSocket bidirectionnel pour TP6 chat) --
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading',
+                    logger=False, engineio_logger=False)
+
+# Dictionnaire rooms : {room_id: [{sid, username, joined_at}]}
+chat_rooms = {}
+
+
+def get_lan_ip():
+    """Retourne l'IP LAN de la machine (Ethernet ou WiFi)."""
+    try:
+        s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 
 @app.route("/")
@@ -505,9 +526,140 @@ def api_dsa():
         return jsonify({"error": str(e)}), 400
 
 
+# ═══════════════════════════════════════════════════
+#  API TP6 — Infos réseau
+# ═══════════════════════════════════════════════════
+
+@app.route("/api/tp6/my_ip")
+def api_my_ip():
+    """Retourne l'IP LAN du serveur pour que les clients puissent se connecter."""
+    ip = get_lan_ip()
+    port = 5000
+    return jsonify({
+        "ip": ip,
+        "port": port,
+        "url": f"http://{ip}:{port}",
+        "wifi_chat_room": "tp6-wifi",
+        "bt_chat_room": "tp6-bluetooth",
+        "tcp_chat_room": "tp6-tcp"
+    })
+
+
+# ═══════════════════════════════════════════════════
+#  SocketIO — Chat temps réel TP6
+# ═══════════════════════════════════════════════════
+
+@socketio.on('connect')
+def on_connect():
+    """Un client se connecte."""
+    pass
+
+
+@socketio.on('disconnect')
+def on_disconnect():
+    """Un client se déconnecte — le retirer de toutes ses rooms."""
+    sid = request.sid
+    for room_id, members in list(chat_rooms.items()):
+        members_left = [m for m in members if m['sid'] != sid]
+        if len(members_left) < len(members):
+            # Ce client était dans cette room
+            removed = [m for m in members if m['sid'] == sid]
+            chat_rooms[room_id] = members_left
+            if removed:
+                name = removed[0].get('username', 'Inconnu')
+                emit('user_left', {
+                    'username': name,
+                    'members': [m['username'] for m in members_left],
+                    'count': len(members_left)
+                }, room=room_id)
+
+
+@socketio.on('join_chat')
+def on_join_chat(data):
+    """
+    Rejoindre une room de chat.
+    data: {room: str, username: str}
+    """
+    room = data.get('room', 'tp6-wifi')
+    username = data.get('username', f"User_{request.sid[:4]}")
+    join_room(room)
+    if room not in chat_rooms:
+        chat_rooms[room] = []
+    # Retirer l'ancien entry si reconnexion
+    chat_rooms[room] = [m for m in chat_rooms[room] if m['sid'] != request.sid]
+    chat_rooms[room].append({
+        'sid': request.sid,
+        'username': username,
+        'joined_at': time.time()
+    })
+    members = [m['username'] for m in chat_rooms[room]]
+    emit('user_joined', {
+        'username': username,
+        'members': members,
+        'count': len(members),
+        'room': room
+    }, room=room)
+
+
+@socketio.on('leave_chat')
+def on_leave_chat(data):
+    """Quitter une room."""
+    room = data.get('room', 'tp6-wifi')
+    leave_room(room)
+    if room in chat_rooms:
+        removed = [m for m in chat_rooms[room] if m['sid'] == request.sid]
+        chat_rooms[room] = [m for m in chat_rooms[room] if m['sid'] != request.sid]
+        if removed:
+            name = removed[0].get('username', 'Inconnu')
+            emit('user_left', {
+                'username': name,
+                'members': [m['username'] for m in chat_rooms[room]],
+                'count': len(chat_rooms[room])
+            }, room=room)
+
+
+@socketio.on('send_message')
+def on_send_message(data):
+    """
+    Relayer un message chiffré à tous les membres de la room.
+    data: {
+        room: str,
+        username: str,
+        encrypted: {iv, ciphertext, tag},   # AES-256-GCM chiffré côté client
+        timestamp: str,
+        msg_id: str
+    }
+    Le serveur ne voit PAS le texte clair — il relaie juste le blob chiffré.
+    """
+    room = data.get('room', 'tp6-wifi')
+    payload = {
+        'username': data.get('username', 'Inconnu'),
+        'encrypted': data.get('encrypted'),   # blob AES-GCM
+        'timestamp': data.get('timestamp'),
+        'msg_id': data.get('msg_id'),
+        'sender_sid': request.sid
+    }
+    emit('message_received', payload, room=room)
+
+
+@socketio.on('ping_test')
+def on_ping_test(data):
+    """Test de latence."""
+    emit('pong_test', {
+        'client_ts': data.get('ts'),
+        'server_ts': time.time() * 1000
+    })
+
+
 if __name__ == "__main__":
-    print("\n" + "=" * 50)
-    print("  🔐 CryptoLab — Interface Graphique")
-    print("  Ouvrir : http://localhost:5000")
-    print("=" * 50 + "\n")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    lan_ip = get_lan_ip()
+    print("\n" + "=" * 56)
+    print("  [*] CryptoLab -- Interface Graphique + Chat Reseau")
+    print("  [>] Local  : http://127.0.0.1:5000")
+    print("  [>] Reseau : http://" + lan_ip + ":5000")
+    print("  [>] Android: ouvrir http://" + lan_ip + ":5000 dans Chrome")
+    print("  [!] WebSockets actives (TP6 Chat temps reel)")
+    print("=" * 56 + "\n")
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True,
+                 use_reloader=False, log_output=False,
+                 allow_unsafe_werkzeug=True)

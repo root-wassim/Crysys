@@ -37,6 +37,9 @@
         <li class="nav-item" data-tp="elgamal_sign"><span class="nav-icon">📜</span> ElGamal Sign</li>
         <li class="nav-item" data-tp="dsa"><span class="nav-icon">🏛️</span> DSA</li>
         <li class="nav-section">TP6 — Applications</li>
+        <li class="nav-item" data-tp="wifi-chat"><span class="nav-icon">📡</span> WiFi Chat</li>
+        <li class="nav-item" data-tp="bt-chat"><span class="nav-icon">🔵</span> Bluetooth Chat</li>
+        <li class="nav-item" data-tp="tcp-chat"><span class="nav-icon">🔒</span> TCP/TLS Chat</li>
         <li class="nav-item" data-tp="vote"><span class="nav-icon">🗳️</span> Vote Paillier</li>
     </ul>
 </nav>
@@ -260,7 +263,228 @@
     </div>
 </section>
 
+<!-- TP6 — WiFi Chat -->
+<section id="page-wifi-chat" class="page">
+    <div class="page-header">
+        <h2>📡 WiFi Chat — AES-256-GCM</h2>
+        <p class="page-desc">TP6 — Chat chiffré en temps réel via WebSockets (UDP simulé sur LAN)</p>
+    </div>
+    <div class="chat-layout">
+        <div class="chat-connect-panel">
+            <div class="network-info-card" id="wifi-network-info">
+                <div class="net-info-row">
+                    <span class="net-label">IP Serveur</span>
+                    <span class="net-val" id="wifi-server-ip">...</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">URL Android</span>
+                    <span class="net-val url-badge" id="wifi-server-url">...</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Chiffrement</span>
+                    <span class="net-val cipher-badge">AES-256-GCM ✅</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Transport</span>
+                    <span class="net-val">WebSocket (LAN WiFi)</span>
+                </div>
+            </div>
+            <div class="connect-form">
+                <div class="input-group">
+                    <label>Votre nom</label>
+                    <input type="text" id="wifi-username" value="PC-Desktop" placeholder="ex: MonPC">
+                </div>
+                <div class="input-group">
+                    <label>Mot de passe partagé (dérive la clé AES)</label>
+                    <input type="text" id="wifi-password" value="CryptoLab2024" placeholder="Même valeur sur tous les appareils">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="wifi-join-btn" onclick="wifiJoin()">📡 Rejoindre WiFi Chat</button>
+                    <button class="btn btn-secondary" onclick="wifiGetIP()">🔍 Voir l’IP</button>
+                </div>
+                <div id="wifi-status" class="chat-status disconnected">⚪ Déconnecté</div>
+            </div>
+            <div class="members-panel">
+                <div class="members-title">👥 Membres connectés</div>
+                <div id="wifi-members" class="members-list">Aucun</div>
+            </div>
+            <div class="crypto-info-panel">
+                <div class="crypto-info-title">🔑 Détails cryptographiques</div>
+                <div id="wifi-crypto-details" class="crypto-details-box">Envoyez un message pour voir les détails AES-GCM...</div>
+            </div>
+        </div>
+        <div class="chat-main">
+            <div class="chat-messages" id="wifi-messages">
+                <div class="chat-welcome">
+                    <div class="welcome-icon">📡</div>
+                    <div class="welcome-title">WiFi Chat Chiffré</div>
+                    <div class="welcome-desc">Rejoignez la room pour commencer à chatter</div>
+                    <div class="welcome-steps">
+                        <div class="step"><span class="step-num">1</span> Entrez votre nom et cliquez <strong>Rejoindre</strong></div>
+                        <div class="step"><span class="step-num">2</span> Sur Android, ouvrez <strong>l’URL Serveur</strong> dans Chrome</div>
+                        <div class="step"><span class="step-num">3</span> Même mot de passe → même clé AES → communication chiffrée !</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-text-input" id="wifi-msg" placeholder="Écrivez votre message..." onkeydown="if(event.key==='Enter') wifiSend()" disabled>
+                <button class="chat-send-btn" id="wifi-send-btn" onclick="wifiSend()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TP6 — Bluetooth Chat -->
+<section id="page-bt-chat" class="page">
+    <div class="page-header">
+        <h2>🔵 Bluetooth Chat — AES-256-GCM</h2>
+        <p class="page-desc">TP6 — Simulation Bluetooth RFCOMM avec appairage PIN + chiffrement AES-GCM</p>
+    </div>
+    <div class="chat-layout">
+        <div class="chat-connect-panel">
+            <div class="network-info-card">
+                <div class="net-info-row">
+                    <span class="net-label">Simulation</span>
+                    <span class="net-val">Bluetooth RFCOMM via WebSocket</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Appairage</span>
+                    <span class="net-val">PIN → PBKDF2 → Clé AES</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Chiffrement</span>
+                    <span class="net-val cipher-badge">AES-256-GCM ✅</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Transport réel</span>
+                    <span class="net-val">WebSocket LAN</span>
+                </div>
+            </div>
+            <div class="connect-form">
+                <div class="input-group">
+                    <label>Nom de l’appareil</label>
+                    <input type="text" id="bt-username" value="Mon-PC" placeholder="ex: Galaxy-S24">
+                </div>
+                <div class="input-group">
+                    <label>PIN d’appairage (même sur les deux appareils)</label>
+                    <input type="text" id="bt-password" value="1234" placeholder="Code PIN Bluetooth">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="bt-join-btn" onclick="btJoin()">🔵 Appairer et Rejoindre</button>
+                    <button class="btn btn-secondary" onclick="wifiGetIP()">🔍 Voir l’IP</button>
+                </div>
+                <div id="bt-status" class="chat-status disconnected">⚪ Déconnecté</div>
+            </div>
+            <div class="members-panel">
+                <div class="members-title">👥 Appareils connectés</div>
+                <div id="bt-members" class="members-list">Aucun</div>
+            </div>
+            <div class="crypto-info-panel">
+                <div class="crypto-info-title">🔑 Détails cryptographiques</div>
+                <div id="bt-crypto-details" class="crypto-details-box">Envoyez un message pour voir les détails AES-GCM...</div>
+            </div>
+        </div>
+        <div class="chat-main">
+            <div class="chat-messages" id="bt-messages">
+                <div class="chat-welcome">
+                    <div class="welcome-icon">🔵</div>
+                    <div class="welcome-title">Bluetooth Chat Chiffré</div>
+                    <div class="welcome-desc">Simulation d’un canal Bluetooth RFCOMM sécurisé</div>
+                    <div class="welcome-steps">
+                        <div class="step"><span class="step-num">1</span> Entrez un code PIN identique sur les deux appareils</div>
+                        <div class="step"><span class="step-num">2</span> Le PIN est transformé en clé AES-256 par PBKDF2</div>
+                        <div class="step"><span class="step-num">3</span> Les messages sont chiffrés avant envoi</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-text-input" id="bt-msg" placeholder="Écrivez votre message..." onkeydown="if(event.key==='Enter') btSend()" disabled>
+                <button class="chat-send-btn" id="bt-send-btn" onclick="btSend()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TP6 — TCP/TLS Chat -->
+<section id="page-tcp-chat" class="page">
+    <div class="page-header">
+        <h2>🔒 TCP/TLS Chat — WebSocket Chiffré</h2>
+        <p class="page-desc">TP6 — Canal TCP/TLS sécurisé — chiffrement AES-256-GCM end-to-end</p>
+    </div>
+    <div class="chat-layout">
+        <div class="chat-connect-panel">
+            <div class="network-info-card">
+                <div class="net-info-row">
+                    <span class="net-label">Protocole</span>
+                    <span class="net-val">WebSocket (TLS simulé)</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Chiffrement</span>
+                    <span class="net-val cipher-badge">AES-256-GCM ✅</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Authentification</span>
+                    <span class="net-val">PBKDF2 (mot de passe)</span>
+                </div>
+                <div class="net-info-row">
+                    <span class="net-label">Intimité</span>
+                    <span class="net-val">Serveur ne voit pas le clair ✅</span>
+                </div>
+            </div>
+            <div class="connect-form">
+                <div class="input-group">
+                    <label>Identifiant client</label>
+                    <input type="text" id="tcp-username" value="Client-PC" placeholder="ex: Client-Android">
+                </div>
+                <div class="input-group">
+                    <label>Clé TLS partagée (pré-échangée)</label>
+                    <input type="text" id="tcp-password" value="TLS-Secret-2024" placeholder="Clé partagée">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="tcp-join-btn" onclick="tcpJoin()">🔒 Connexion TLS</button>
+                    <button class="btn btn-secondary" onclick="wifiGetIP()">🔍 Voir l’IP</button>
+                </div>
+                <div id="tcp-status" class="chat-status disconnected">⚪ Déconnecté</div>
+            </div>
+            <div class="members-panel">
+                <div class="members-title">👥 Clients connectés</div>
+                <div id="tcp-members" class="members-list">Aucun</div>
+            </div>
+            <div class="crypto-info-panel">
+                <div class="crypto-info-title">🔑 Détails cryptographiques</div>
+                <div id="tcp-crypto-details" class="crypto-details-box">Envoyez un message pour voir les détails AES-GCM...</div>
+            </div>
+        </div>
+        <div class="chat-main">
+            <div class="chat-messages" id="tcp-messages">
+                <div class="chat-welcome">
+                    <div class="welcome-icon">🔒</div>
+                    <div class="welcome-title">TCP/TLS Chat Chiffré</div>
+                    <div class="welcome-desc">Canal sécurisé avec chiffrement end-to-end</div>
+                    <div class="welcome-steps">
+                        <div class="step"><span class="step-num">1</span> Partagez la même clé avec votre interlocuteur</div>
+                        <div class="step"><span class="step-num">2</span> Le serveur relaye sans jamais voir le contenu</div>
+                        <div class="step"><span class="step-num">3</span> Chaque message a un nonce unique (sécurité GCM)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-text-input" id="tcp-msg" placeholder="Écrivez votre message..." onkeydown="if(event.key==='Enter') tcpSend()" disabled>
+                <button class="chat-send-btn" id="tcp-send-btn" onclick="tcpSend()" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
 </main>
+<script src="https://cdn.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

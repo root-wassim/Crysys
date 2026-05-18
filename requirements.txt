@@ -7,3 +7,5 @@ pytest>=8.0
 numpy>=1.26
 phe>=1.5
 flask>=3.0
+flask-socketio>=5.3
+eventlet>=0.35
